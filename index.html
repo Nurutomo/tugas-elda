@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PZEM Energy Monitor Dashboard</title>
     
-    <!-- Chart.js for charts and gauge -->
+    <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Canvas Gauges for speedometer gauges -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-gauges@2.1.7/gauge.min.js"></script>
     
     <!-- MQTT.js for WebSocket MQTT connection -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -87,9 +89,10 @@
         }
 
         .gauge-canvas {
-            width: 250px !important;
-            height: 200px !important;
+            width: 220px !important;
+            height: 220px !important;
             margin: 0 auto;
+            display: block;
         }
 
         .gauge-value {
@@ -186,7 +189,7 @@
             
             .gauge-canvas {
                 width: 200px !important;
-                height: 150px !important;
+                height: 200px !important;
             }
             
             .header h1 {
@@ -206,7 +209,7 @@
             <h3>MQTT Configuration</h3>
             <div class="config-row">
                 <label for="brokerUrl">Broker URL:</label>
-                <input type="text" id="brokerUrl" value="ws://test.mosquitto.org:8080" placeholder="ws://test.mosquitto.org:8080">
+                <input type="text" id="brokerUrl" value="wss://test.mosquitto.org:8081" placeholder="wss://test.mosquitto.org:8081">
             </div>
             <div class="config-row">
                 <label for="topicPrefix">Topic Prefix:</label>
@@ -224,35 +227,95 @@
             <!-- Voltage Gauge -->
             <div class="gauge-container">
                 <div class="gauge-title">Voltage</div>
-                <canvas id="voltageGauge" class="gauge-canvas"></canvas>
+                <canvas id="voltageGauge" 
+                    data-type="radial-gauge" 
+                    data-width="220" 
+                    data-height="220" 
+                    data-min-value="0" 
+                    data-max-value="300" 
+                    data-major-ticks="0,50,100,150,200,250,300" 
+                    data-units="V" 
+                    data-title="Voltage" 
+                    data-value="0" 
+                    data-color-value="#4CAF50" 
+                    data-glow="true">
+                </canvas>
                 <div class="gauge-value" id="voltageValue">0 V</div>
             </div>
 
             <!-- Current Gauge -->
             <div class="gauge-container">
                 <div class="gauge-title">Current</div>
-                <canvas id="currentGauge" class="gauge-canvas"></canvas>
+                <canvas id="currentGauge" 
+                    data-type="radial-gauge" 
+                    data-width="220" 
+                    data-height="220" 
+                    data-min-value="0" 
+                    data-max-value="30" 
+                    data-major-ticks="0,5,10,15,20,25,30" 
+                    data-units="A" 
+                    data-title="Current" 
+                    data-value="0" 
+                    data-color-value="#2196F3" 
+                    data-glow="true">
+                </canvas>
                 <div class="gauge-value" id="currentValue">0 A</div>
             </div>
 
             <!-- Power Gauge -->
             <div class="gauge-container">
                 <div class="gauge-title">Power</div>
-                <canvas id="powerGauge" class="gauge-canvas"></canvas>
+                <canvas id="powerGauge" 
+                    data-type="radial-gauge" 
+                    data-width="220" 
+                    data-height="220" 
+                    data-min-value="0" 
+                    data-max-value="6000" 
+                    data-major-ticks="0,1000,2000,3000,4000,5000,6000" 
+                    data-units="W" 
+                    data-title="Power" 
+                    data-value="0" 
+                    data-color-value="#FF9800" 
+                    data-glow="true">
+                </canvas>
                 <div class="gauge-value" id="powerValue">0 W</div>
             </div>
 
             <!-- Frequency Gauge -->
             <div class="gauge-container">
                 <div class="gauge-title">Frequency</div>
-                <canvas id="frequencyGauge" class="gauge-canvas"></canvas>
-                <div class="gauge-value" id="frequencyValue">0 Hz</div>
+                <canvas id="frequencyGauge" 
+                    data-type="radial-gauge" 
+                    data-width="220" 
+                    data-height="220" 
+                    data-min-value="40" 
+                    data-max-value="60" 
+                    data-major-ticks="40,45,50,55,60" 
+                    data-units="Hz" 
+                    data-title="Frequency" 
+                    data-value="50" 
+                    data-color-value="#9C27B0" 
+                    data-glow="true">
+                </canvas>
+                <div class="gauge-value" id="frequencyValue">50 Hz</div>
             </div>
 
             <!-- Power Factor Gauge -->
             <div class="gauge-container">
                 <div class="gauge-title">Power Factor</div>
-                <canvas id="powerFactorGauge" class="gauge-canvas"></canvas>
+                <canvas id="powerFactorGauge" 
+                    data-type="radial-gauge" 
+                    data-width="220" 
+                    data-height="220" 
+                    data-min-value="0" 
+                    data-max-value="1" 
+                    data-major-ticks="0,0.2,0.4,0.6,0.8,1.0" 
+                    data-units="" 
+                    data-title="Power Factor" 
+                    data-value="0" 
+                    data-color-value="#F44336" 
+                    data-glow="true">
+                </canvas>
                 <div class="gauge-value" id="powerFactorValue">0</div>
             </div>
 
@@ -297,52 +360,33 @@
             initializeHistoryChart();
         });
 
-        // Create gauge chart
-        function createGauge(canvasId, label, value, max, color) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            return new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [value, max - value],
-                        backgroundColor: [color, '#e0e0e0'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    circumference: Math.PI,
-                    rotation: Math.PI,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            enabled: false
-                        }
-                    }
-                }
-            });
-        }
-
-        // Initialize all gauges
+        // Initialize gauges using data attributes (canvas-gauges auto-initialization)
         function initializeGauges() {
-            gauges.voltage = createGauge('voltageGauge', 'Voltage', 0, 300, '#4CAF50');
-            gauges.current = createGauge('currentGauge', 'Current', 0, 30, '#2196F3');
-            gauges.power = createGauge('powerGauge', 'Power', 0, 6000, '#FF9800');
-            gauges.frequency = createGauge('frequencyGauge', 'Frequency', 0, 60, '#9C27B0');
-            gauges.powerFactor = createGauge('powerFactorGauge', 'Power Factor', 0, 1, '#F44336');
+            // Wait for canvas-gauges to auto-initialize from data attributes
+            setTimeout(() => {
+                // Get gauge instances from window.gauges (auto-created by canvas-gauges)
+                const canvasGauges = window.gauges || [];
+                if (canvasGauges.length >= 5) {
+                    // Map gauges by canvas order
+                    gauges.voltage = canvasGauges[0];      // voltageGauge
+                    gauges.current = canvasGauges[1];      // currentGauge  
+                    gauges.power = canvasGauges[2];        // powerGauge
+                    gauges.frequency = canvasGauges[3];    // frequencyGauge
+                    gauges.powerFactor = canvasGauges[4];  // powerFactorGauge
+                    
+                    console.log("✅ Gauges initialized successfully:", gauges);
+                } else {
+                    console.error("❌ Gauges not properly initialized");
+                }
+            }, 500);
         }
 
         // Update gauge value
         function updateGauge(gaugeName, value, max) {
             const gauge = gauges[gaugeName];
             if (gauge) {
-                gauge.data.datasets[0].data = [value, Math.max(0, max - value)];
-                gauge.update('none');
+                const clampedValue = Math.min(Math.max(0, value), max);
+                gauge.value = clampedValue;
             }
         }
 
